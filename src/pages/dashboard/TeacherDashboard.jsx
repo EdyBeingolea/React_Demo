@@ -1,39 +1,37 @@
-import React from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
+import LoadingSpinner from "../../components/LoadingSpinner";
 
-// Usando export default
 const TeacherDashboard = () => {
-     const { userData, currentUser } = useAuth();
+     const { profile, logout } = useAuth();
+     const navigate = useNavigate();
+
+     if (!profile) return <LoadingSpinner />;
 
      return (
-          <div className="min-h-screen bg-gray-100">
-               <header className="bg-white shadow">
-                    <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-                         <h1 className="text-3xl font-bold text-gray-900">
-                              Panel del Profesor
-                         </h1>
-                    </div>
-               </header>
+          <div className="p-6">
+               <div className="flex justify-between items-center mb-6">
+                    <h1 className="text-2xl font-bold">Panel del Profesor</h1>
+                    <button
+                         onClick={logout}
+                         className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
+                    >
+                         Cerrar sesión
+                    </button>
+               </div>
 
-         <main>
-                    <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-                         <div className="px-4 py-6 sm:px-0">
-                              <div className="border-4 border-dashed border-gray-200 rounded-lg p-6 bg-white">
-                                   <h2 className="text-xl font-semibold mb-4">
-                                        Bienvenido, Profesor{" "}
-                                        {userData?.name || currentUser?.email}
-                                   </h2>
-
-                     <div className="space-y-4">
-                                        <GoogleApiButton service="drive" />
-                                        <GoogleApiButton service="gmail" />
-                                   </div>
-                              </div>
-                         </div>
-                    </div>
-               </main>
+               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <button
+                         onClick={() => navigate("/teacher/calificaciones")}
+                         className="p-4 bg-blue-500 text-white rounded hover:bg-blue-600"
+                    >
+                         Gestionar calificaciones
+                    </button>
+                    {/* Agrega más botones/rutas según necesites */}
+               </div>
           </div>
      );
 };
 
-export default TeacherDashboard; // ← Esto es lo clave
+export default TeacherDashboard;
+

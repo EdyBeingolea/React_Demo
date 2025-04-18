@@ -1,54 +1,36 @@
-import React from "react";
+import { useNavigate } from "react-router-dom";
+import LoadingSpinner from "../../components/LoadingSpinner";
 import { useAuth } from "../../context/AuthContext";
 
-const AdminDashboard = () => {
-     const { userData, currentUser } = useAuth();
+const TreasuryDashboard = () => {
+     const { profile, logout } = useAuth();
+     const navigate = useNavigate();
+
+     if (!profile) return <LoadingSpinner />;
 
      return (
-          <div className="min-h-screen bg-gray-100">
-               <header className="bg-white shadow">
-                    <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-                         <h1 className="text-3xl font-bold text-gray-900">
-                              Panel de Administrador
-                         </h1>
-                    </div>
-               </header>
+          <div className="p-6">
+               <div className="flex justify-between items-center mb-6">
+                    <h1 className="text-2xl font-bold">Panel de Tesorería</h1>
+                    <p className="text-shadow-blue-950"> {profile}</p>
+                    <button
+                         onClick={logout}
+                         className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
+                    >
+                         Cerrar sesión
+                    </button>
+               </div>
 
-               <main>
-                    <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-                         <div className="px-4 py-6 sm:px-0">
-                              <div className="border-4 border-dashed border-gray-200 rounded-lg p-6 bg-white">
-                                   <h2 className="text-xl font-semibold mb-4">
-                                        Bienvenido, Administrador{" "}
-                                        {userData?.name || currentUser?.email}
-                                   </h2>
-
-                                   <div className="space-y-4">
-                                        <GoogleApiButton service="drive" />
-                                        <GoogleApiButton service="gmail" />
-                                   </div>
-
-                                   <div className="mt-6 p-4 bg-gray-50 rounded">
-                                        <h3 className="font-medium mb-2">
-                                             Información de administrador:
-                                        </h3>
-                                        <pre className="text-xs mt-2 p-2 bg-gray-100 overflow-x-auto">
-                                             {JSON.stringify(
-                                                  {
-                                                       user: currentUser,
-                                                       userData,
-                                                  },
-                                                  null,
-                                                  2
-                                             )}
-                                        </pre>
-                                   </div>
-                              </div>
-                         </div>
-                    </div>
-               </main>
+               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <button
+                         onClick={() => navigate("/treasury/pagos")}
+                         className="p-4 bg-blue-500 text-white rounded hover:bg-blue-600"
+                    >
+                         Gestionar pagos
+                    </button>
+               </div>
           </div>
      );
 };
 
-export default AdminDashboard;
+export default TreasuryDashboard;

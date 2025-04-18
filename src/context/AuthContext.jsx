@@ -4,6 +4,7 @@ import {
      clearTokens,
      getStoredTokens,
      initGoogleClient,
+     refreshAccessToken,
      storeTokens,
 } from "../lib/googleAuth";
 
@@ -19,14 +20,49 @@ export const AuthProvider = ({ children }) => {
           isAuthenticated: false,
      });
 
-     const verifyToken = async (accessToken) => {
+     // Verificar y refrescar token si es necesario
+     const verifyAndRefreshToken = async (tokenData) => {
           try {
+               // Primero intentamos verificar el token actual
                const response = await axios.get(
-                    `https://www.googleapis.com/oauth2/v1/tokeninfo?access_token=${accessToken}`
+                    `https://www.googleapis.com/oauth2/v1/tokeninfo?access_token=${tokenData.access_token}`
                );
-               return response.data && !response.data.error;
+
+               if (response.data && !response.data.error) {
+                    return tokenData; // Token aún válido
+               }
           } catch (error) {
-               return false;
+               console.log("error" + error);
+
+               console.log(
+                    "Token expirado o inválido, intentando refrescar..."
+               );
+
+               // Si el token está expirado, intentamos refrescarlo
+               if (tokenData.refresh_token) {
+                    try {
+                         const newTokenData = await refreshAccessToken(
+                              tokenData.refresh_token
+                         );
+                         const updatedTokens = {
+                              ...tokenData,
+                              ...newTokenData,
+                              refresh_token: tokenData.refresh_token, // Mantenemos el refresh token original
+                         };
+                         storeTokens(updatedTokens);
+                         return updatedTokens;
+                    } catch (refreshError) {
+                         console.error(
+                              "Error al refrescar token:",
+                              refreshError
+                         );
+                         throw refreshError;
+                    }
+               }
+
+               throw new Error(
+                    "Token expirado y no hay refresh token disponible"
+               );
           }
      };
 
@@ -34,11 +70,15 @@ export const AuthProvider = ({ children }) => {
           const loadAuthState = async () => {
                const tokenData = getStoredTokens();
                if (tokenData) {
-                    const isValid = await verifyToken(tokenData.access_token);
-                    if (isValid) {
-                         await fetchUserData(tokenData);
-                    } else {
+                    try {
+                         const validTokenData = await verifyAndRefreshToken(
+                              tokenData
+                         );
+                         await fetchUserData(validTokenData);
+                    } catch (error) {
+                         console.error("Error de autenticación:", error);
                          await completeLogout();
+                         setAuthState((prev) => ({ ...prev, loading: false }));
                     }
                } else {
                     setAuthState((prev) => ({ ...prev, loading: false }));
@@ -46,6 +86,19 @@ export const AuthProvider = ({ children }) => {
           };
 
           loadAuthState();
+
+          // Configurar intervalo para verificar token periódicamente
+          const checkTokenInterval = setInterval(() => {
+               const { tokens } = authState;
+               if (tokens?.access_token) {
+                    verifyAndRefreshToken(tokens).catch(() => {
+                         // Si hay error, forzar logout
+                         logout();
+                    });
+               }
+          }, 5 * 60 * 1000); // Verificar cada 5 minutos
+
+          return () => clearInterval(checkTokenInterval);
      }, []);
 
      const fetchUserData = async (tokenData) => {
@@ -119,6 +172,9 @@ export const AuthProvider = ({ children }) => {
           setAuthState((prev) => ({ ...prev, loading: true, error: null }));
 
           try {
+               // Forzar logout previo para asegurar nueva sesión
+               await completeLogout();
+
                const client = initGoogleClient(
                     async (tokenResponse) => {
                          const tokenData = storeTokens(tokenResponse);

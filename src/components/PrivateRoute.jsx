@@ -1,16 +1,25 @@
-import { Navigate } from "react-router-dom";
+import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import LoadingSpinner from "./LoadingSpinner";
 
-const PrivateRoute = ({ children }) => {
-     const { isAuthenticated, loading, tokens } = useAuth();
+const PrivateRoute = ({ children, allowedRoles }) => {
+     const { isAuthenticated, loading, profile } = useAuth();
+     const location = useLocation();
 
      if (loading) return <LoadingSpinner />;
 
-     if (!isAuthenticated || !tokens?.access_token) {
-          // Limpieza adicional por si acaso
-          localStorage.removeItem("google_token");
-          return <Navigate to="/" replace />;
+     if (!isAuthenticated) {
+          return <Navigate to="/" state={{ from: location }} replace />;
+     }
+
+     if (allowedRoles && !allowedRoles.includes(profile?.role)) {
+          return (
+               <Navigate
+                    to="/unauthorized"
+                    state={{ from: location }}
+                    replace
+               />
+          );
      }
 
      return children;

@@ -1,66 +1,73 @@
-import React from "react";
+import { useNavigate } from "react-router-dom";
+import LoadingSpinner from "../../components/LoadingSpinner";
 import { useAuth } from "../../context/AuthContext";
 
 const StudentDashboard = () => {
-     const { userData, currentUser } = useAuth();
+     const { user, profile, tokens,  logout } = useAuth();
+
+     const navigate = useNavigate();
+
+     if (!profile) return <LoadingSpinner />;
 
      return (
-          <div className="min-h-screen bg-gray-100">
-               <header className="bg-white shadow">
-                    <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-                         <h1 className="text-3xl font-bold text-gray-900">
-                              Panel del Estudiante
-                         </h1>
-                    </div>
-               </header>
-
-               <main>
-                    <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-                         <div className="px-4 py-6 sm:px-0">
-                              <div className="border-4 border-dashed border-gray-200 rounded-lg p-6 bg-white">
-                                   <h2 className="text-xl font-semibold mb-4">
-                                        Bienvenido,{" "}
-                                        {userData?.name || currentUser?.email}
-                                   </h2>
-
-                                   <div className="space-y-4">
-                                        <GoogleApiButton service="drive" />
-                                        <GoogleApiButton service="gmail" />
-                                   </div>
-
-                                   <div className="mt-6 p-4 bg-gray-50 rounded">
-                                        <h3 className="font-medium mb-2">
-                                             Información de usuario:
-                                        </h3>
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                             <div>
-                                                  <p>
-                                                       <strong>Email:</strong>{" "}
-                                                       {currentUser?.email}
-                                                  </p>
-                                                  <p>
-                                                       <strong>Rol:</strong>{" "}
-                                                       {userData?.role}
-                                                  </p>
-                                             </div>
-                                             <div>
-                                                  <p>
-                                                       <strong>ID:</strong>{" "}
-                                                       {currentUser?.uid}
-                                                  </p>
-                                                  <p>
-                                                       <strong>
-                                                            Proveedor:
-                                                       </strong>{" "}
-                                                       Google
-                                                  </p>
-                                             </div>
-                                        </div>
-                                   </div>
+          <div className="p-6">
+               <div className="flex justify-between items-center mb-6">
+                    <h1 className="text-2xl font-bold">Panel del Estudiante</h1>
+                    <p>Nombre del estudiante: {user?.name}</p>
+                    <p>Correo electrónico: {user?.email}</p>
+                    <p>Rol: {profile?.role}</p>
+                    {/* tokens */}
+                    <div className="fixed bottom-0 right-0 bg-white p-4 shadow-lg z-50 max-w-xs">
+                         <h3 className="font-bold mb-2">Debug Tokens</h3>
+                         <div className="space-y-2">
+                              <div>
+                                   <p className="text-sm font-semibold">
+                                        Access Token:
+                                   </p>
+                                   <p className="text-xs break-all bg-gray-100 p-1 rounded">
+                                        {tokens?.access_token ||
+                                             "No disponible"}
+                                   </p>
+                              </div>
+                              <div>
+                                   <p className="text-sm font-semibold">
+                                        Refresh Token:
+                                   </p>
+                                   <p className="text-xs break-all bg-gray-100 p-1 rounded">
+                                        {tokens?.refresh_token ||
+                                             "No disponible"}
+                                   </p>
+                              </div>
+                              <div>
+                                   <p className="text-sm font-semibold">
+                                        Expira:
+                                   </p>
+                                   <p className="text-xs">
+                                        {tokens?.expiry
+                                             ? new Date(
+                                                    tokens.expiry
+                                               ).toLocaleString()
+                                             : "No disponible"}
+                                   </p>
                               </div>
                          </div>
                     </div>
-               </main>
+                    <button
+                         onClick={logout}
+                         className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
+                    >
+                         Cerrar sesión
+                    </button>
+               </div>
+
+               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <button
+                         onClick={() => navigate("/student/listado")}
+                         className="p-4 bg-blue-500 text-white rounded hover:bg-blue-600"
+                    >
+                         Ver listado
+                    </button>
+               </div>
           </div>
      );
 };
