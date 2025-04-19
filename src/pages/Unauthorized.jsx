@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 import { AlertTriangle, ArrowLeft } from "lucide-react";
+import { motion } from "framer-motion";
 
 const Unauthorized = () => {
      const { logout } = useAuth();
