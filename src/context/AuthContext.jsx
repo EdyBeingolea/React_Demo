@@ -1,10 +1,12 @@
 import axios from "axios";
 import { createContext, useContext, useEffect, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import {
      clearTokens,
+     exchangeCodeForTokens,
      getStoredTokens,
-     initGoogleClient,
      refreshAccessToken,
+     startGoogleAuth,
      storeTokens,
 } from "../lib/googleAuth";
 
@@ -20,25 +22,27 @@ export const AuthProvider = ({ children }) => {
           isAuthenticated: false,
      });
 
-     // Verificar y refrescar token si es necesario
+     const location = useLocation();
+     const navigate = useNavigate();
+
      const verifyAndRefreshToken = async (tokenData) => {
+          if (!tokenData || !tokenData.access_token) {
+               throw new Error("No hay datos de token disponibles");
+          }
+
           try {
-               // Primero intentamos verificar el token actual
                const response = await axios.get(
                     `https://www.googleapis.com/oauth2/v1/tokeninfo?access_token=${tokenData.access_token}`
                );
 
                if (response.data && !response.data.error) {
-                    return tokenData; // Token aún válido
+                    return tokenData;
                }
           } catch (error) {
-               console.log("error" + error);
-
                console.log(
                     "Token expirado o inválido, intentando refrescar..."
                );
 
-               // Si el token está expirado, intentamos refrescarlo
                if (tokenData.refresh_token) {
                     try {
                          const newTokenData = await refreshAccessToken(
@@ -47,7 +51,7 @@ export const AuthProvider = ({ children }) => {
                          const updatedTokens = {
                               ...tokenData,
                               ...newTokenData,
-                              refresh_token: tokenData.refresh_token, // Mantenemos el refresh token original
+                              refresh_token: tokenData.refresh_token,
                          };
                          storeTokens(updatedTokens);
                          return updatedTokens;
@@ -56,54 +60,112 @@ export const AuthProvider = ({ children }) => {
                               "Error al refrescar token:",
                               refreshError
                          );
+                         clearTokens();
                          throw refreshError;
                     }
                }
 
+               clearTokens();
                throw new Error(
                     "Token expirado y no hay refresh token disponible"
                );
           }
      };
 
+     const processAuthCode = async (code) => {
+          try {
+               setAuthState((prev) => ({ ...prev, loading: true }));
+               const tokenData = await exchangeCodeForTokens(code);
+               await fetchUserData(tokenData);
+
+               const redirectAfter =
+                    sessionStorage.getItem("auth_redirect_after") ||
+                    "/dashboard";
+               sessionStorage.removeItem("auth_redirect_after");
+               navigate(redirectAfter, { replace: true });
+          } catch (error) {
+               console.error("Error procesando código de autorización:", error);
+               await completeLogout();
+               setAuthState((prev) => ({
+                    ...prev,
+                    loading: false,
+                    error: "Error al procesar la autenticación",
+               }));
+               navigate("/", { replace: true });
+          }
+     };
+
      useEffect(() => {
-          const loadAuthState = async () => {
-               const tokenData = getStoredTokens();
-               if (tokenData) {
-                    try {
-                         const validTokenData = await verifyAndRefreshToken(
-                              tokenData
-                         );
-                         await fetchUserData(validTokenData);
-                    } catch (error) {
-                         console.error("Error de autenticación:", error);
-                         await completeLogout();
+          if (location.pathname === "/auth/callback") {
+               const params = new URLSearchParams(location.search);
+               const code = params.get("code");
+               const state = params.get("state");
+               const error = params.get("error");
+
+               if (error) {
+                    console.error("Error de autenticación de Google:", error);
+                    setAuthState((prev) => ({
+                         ...prev,
+                         loading: false,
+                         error: "Error en la autenticación de Google",
+                    }));
+                    navigate("/", { replace: true });
+                    return;
+               }
+
+               const savedState = sessionStorage.getItem("auth_state");
+               if (state !== savedState) {
+                    console.error("Estado inválido, posible ataque CSRF");
+                    setAuthState((prev) => ({
+                         ...prev,
+                         loading: false,
+                         error: "Error de seguridad en la autenticación",
+                    }));
+                    navigate("/", { replace: true });
+                    return;
+               }
+
+               if (code) {
+                    processAuthCode(code);
+               }
+          } else {
+               const loadAuthState = async () => {
+                    const tokenData = getStoredTokens();
+                    if (tokenData) {
+                         try {
+                              const validTokenData =
+                                   await verifyAndRefreshToken(tokenData);
+                              await fetchUserData(validTokenData);
+                         } catch (error) {
+                              console.error("Error de autenticación:", error);
+                              await completeLogout();
+                              setAuthState((prev) => ({
+                                   ...prev,
+                                   loading: false,
+                              }));
+                         }
+                    } else {
                          setAuthState((prev) => ({ ...prev, loading: false }));
                     }
-               } else {
-                    setAuthState((prev) => ({ ...prev, loading: false }));
-               }
-          };
+               };
 
-          loadAuthState();
+               loadAuthState();
+          }
 
-          // Configurar intervalo para verificar token periódicamente
           const checkTokenInterval = setInterval(() => {
-               const { tokens } = authState;
+               const tokens = getStoredTokens();
                if (tokens?.access_token) {
                     verifyAndRefreshToken(tokens).catch(() => {
-                         // Si hay error, forzar logout
                          logout();
                     });
                }
-          }, 5 * 60 * 1000); // Verificar cada 5 minutos
+          }, 5 * 60 * 1000);
 
           return () => clearInterval(checkTokenInterval);
-     }, []);
+     }, [location.pathname]);
 
      const fetchUserData = async (tokenData) => {
           try {
-               // Obtener datos de usuario de Google
                const userRes = await axios.get(
                     "https://www.googleapis.com/oauth2/v3/userinfo",
                     {
@@ -113,7 +175,6 @@ export const AuthProvider = ({ children }) => {
                     }
                );
 
-               // Obtener datos del backend
                const backendRes = await axios.get(
                     `${import.meta.env.VITE_BACKEND_URL}/users/by-email`,
                     {
@@ -149,7 +210,6 @@ export const AuthProvider = ({ children }) => {
           const tokenData = getStoredTokens();
           if (tokenData?.access_token) {
                try {
-                    // Revocar token de Google
                     await axios.post(
                          "https://oauth2.googleapis.com/revoke",
                          null,
@@ -172,27 +232,15 @@ export const AuthProvider = ({ children }) => {
           setAuthState((prev) => ({ ...prev, loading: true, error: null }));
 
           try {
-               // Forzar logout previo para asegurar nueva sesión
                await completeLogout();
 
-               const client = initGoogleClient(
-                    async (tokenResponse) => {
-                         const tokenData = storeTokens(tokenResponse);
-                         await fetchUserData(tokenData);
-                    },
-                    (error) => {
-                         throw new Error(
-                              error.message || "Error en autenticación"
-                         );
-                    }
-               );
-               client.requestAccessToken();
+               startGoogleAuth();
           } catch (error) {
                await completeLogout();
                setAuthState((prev) => ({
                     ...prev,
                     loading: false,
-                    error: error.message,
+                    error: error.message || "Error al iniciar sesión",
                }));
           }
      };
@@ -207,7 +255,7 @@ export const AuthProvider = ({ children }) => {
                error: null,
                isAuthenticated: false,
           });
-          window.location.href = "/";
+          navigate("/", { replace: true });
      };
 
      return (

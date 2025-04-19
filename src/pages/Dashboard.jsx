@@ -7,7 +7,6 @@ const Dashboard = () => {
 
      if (loading) return <LoadingSpinner />;
 
-     // Redirigir según el rol del usuario
      switch (profile?.role) {
           case "student":
                return <Navigate to="/student" replace />;

@@ -3,7 +3,7 @@ import LoadingSpinner from "../../components/LoadingSpinner";
 import { useAuth } from "../../context/AuthContext";
 
 const StudentDashboard = () => {
-     const { user, profile, tokens,  logout } = useAuth();
+     const { user, profile, tokens, logout } = useAuth();
 
      const navigate = useNavigate();
 
@@ -16,7 +16,6 @@ const StudentDashboard = () => {
                     <p>Nombre del estudiante: {user?.name}</p>
                     <p>Correo electrónico: {user?.email}</p>
                     <p>Rol: {profile?.role}</p>
-                    {/* tokens */}
                     <div className="fixed bottom-0 right-0 bg-white p-4 shadow-lg z-50 max-w-xs">
                          <h3 className="font-bold mb-2">Debug Tokens</h3>
                          <div className="space-y-2">

@@ -1,18 +1,19 @@
 import {
-     BrowserRouter as Router,
-     Route,
-     Routes,
      Navigate,
+     Route,
+     BrowserRouter as Router,
+     Routes,
 } from "react-router-dom";
+import "./App.css";
 import PrivateRoute from "./components/PrivateRoute";
 import { AuthProvider } from "./context/AuthContext";
+import AuthCallback from "./pages/AuthCallback";
 import Dashboard from "./pages/Dashboard";
 import Login from "./pages/LoginForm";
 import Unauthorized from "./pages/Unauthorized";
 import StudentDashboard from "./pages/dashboard/StudentDashboard";
 import TeacherDashboard from "./pages/dashboard/TeacherDashboard";
 import TreasuryDashboard from "./pages/dashboard/TreasuryDashboard";
-import "./App.css";
 
 function App() {
      return (
@@ -25,7 +26,11 @@ function App() {
                               element={<Unauthorized />}
                          />
 
-               {/* Rutas protegidas por rol */}
+                         <Route
+                              path="/auth/callback"
+                              element={<AuthCallback />}
+                         />
+
                          <Route
                               path="/student/*"
                               element={
@@ -50,8 +55,6 @@ function App() {
                                    </PrivateRoute>
                               }
                          />
-
-               {/* Ruta de dashboard genérica que redirige según el rol */}
                          <Route
                               path="/dashboard"
                               element={
@@ -61,7 +64,6 @@ function App() {
                               }
                          />
 
-               {/* Redirección para rutas no encontradas */}
                          <Route
                               path="*"
                               element={<Navigate to="/" replace />}

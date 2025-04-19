@@ -9,6 +9,7 @@ const PrivateRoute = ({ children, allowedRoles }) => {
      if (loading) return <LoadingSpinner />;
 
      if (!isAuthenticated) {
+          sessionStorage.setItem("auth_redirect_after", location.pathname);
           return <Navigate to="/" state={{ from: location }} replace />;
      }
 

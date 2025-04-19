@@ -27,11 +27,9 @@ const TeacherDashboard = () => {
                     >
                          Gestionar calificaciones
                     </button>
-                    {/* Agrega más botones/rutas según necesites */}
                </div>
           </div>
      );
 };
 
 export default TeacherDashboard;
-

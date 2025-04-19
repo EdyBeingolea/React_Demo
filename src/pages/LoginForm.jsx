@@ -19,6 +19,13 @@ export const Login = () => {
           }
      }, [isAuthenticated, hasRedirected, navigate]);
 
+     // Handler para iniciar sesión
+     const handleLogin = async () => {
+          // La función login ahora manejará la redirección directamente
+          await login();
+          // No es necesario hacer nada más aquí, ya que el usuario será redirigido
+     };
+
      return (
           <div className="min-h-screen w-full flex flex-col md:flex-row">
                <div className="relative w-full md:w-1/2 min-h-[300px] md:min-h-screen bg-indigo-900">
@@ -62,13 +69,13 @@ export const Login = () => {
                                    </p>
                               </div>
                               <button
-                                   onClick={login}
+                                   onClick={handleLogin}
                                    disabled={loading}
                                    className="w-full flex items-center justify-center gap-3 bg-white border-2 border-gray-200 text-gray-800 px-6 py-3 rounded-xl hover:bg-gray-50 transition-colors duration-200 font-medium disabled:opacity-50"
                               >
                                    <FcGoogle className="w-5 h-5" />
                                    {loading
-                                        ? "Cargando..."
+                                        ? "Redirigiendo..."
                                         : "Continuar con Google"}
                               </button>
 
@@ -76,33 +83,11 @@ export const Login = () => {
                                    <div className="bg-red-50 text-red-600 p-4 rounded-lg text-sm mt-4">
                                         {error}
                                         <button
-                                             onClick={login}
+                                             onClick={handleLogin}
                                              className="ml-2 text-red-700 underline"
                                         >
                                              Intentar nuevamente
                                         </button>
-                                        {error.includes("bloqueó") && (
-                                             <div className="mt-2 text-sm">
-                                                  <p>
-                                                       ¿Cómo permitir ventanas
-                                                       emergentes?
-                                                  </p>
-                                                  <ul className="list-disc pl-5 mt-1">
-                                                       <li>
-                                                            Chrome: Haz clic en
-                                                            el ícono de candado
-                                                            en la barra de
-                                                            direcciones
-                                                       </li>
-                                                       <li>
-                                                            Firefox: Ve a
-                                                            Configuración →
-                                                            Privacidad y
-                                                            Seguridad → Permisos
-                                                       </li>
-                                                  </ul>
-                                             </div>
-                                        )}
                                    </div>
                               )}
                          </div>
@@ -113,4 +98,3 @@ export const Login = () => {
 };
 
 export default Login;
-

@@ -1,0 +1,24 @@
+START
+Algoritmo AlquilerAutomoviles
+    Definir kmRecorridos, montoBase, montoTotal, montoIGV, montoPagar Como FLOAT
+
+    Escribir "Ingrese los kilómetros recorridos:"
+    Leer kmRecorridos
+
+    Si kmRecorridos <= 300 Entonces
+        montoBase <- 300
+    Sino
+        Si kmRecorridos <= 1000 Entonces
+            montoBase <- 300 + (kmRecorridos - 300) * 15
+        Sino
+            montoBase <- 300 + (700 * 15) + (kmRecorridos - 1000) * 10
+        FinSi
+    FinSi
+
+    montoIGV <- montoBase * 0.16
+    montoPagar <- montoBase + montoIGV
+
+    Escribir "Monto base: S/.", montoBase
+    Escribir "IGV (16%): S/.", montoIGV
+    Escribir "Total a pagar: S/.", montoPagar
+END
