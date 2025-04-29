@@ -93,3 +93,11 @@
           opacity: 1;
      }
 }
+
+.link {
+     @apply p-2.5 flex rounded-md gap-6 items-center md:cursor-pointer cursor-default duration-300 font-medium;
+}
+
+.active {
+     @apply bg-gray-700 text-white;
+}

@@ -40,7 +40,7 @@ export const AuthProvider = ({ children }) => {
                }
           } catch (error) {
                console.log(
-                    "Token expirado o inválido, intentando refrescar..."
+                    "Token expirado o inválido, intentando refrescar...", error
                );
 
                if (tokenData.refresh_token) {

@@ -11,9 +11,10 @@ import AuthCallback from "./pages/AuthCallback";
 import Dashboard from "./pages/Dashboard";
 import Login from "./pages/LoginForm";
 import Unauthorized from "./pages/Unauthorized";
-import StudentDashboard from "./pages/dashboard/StudentDashboard";
-import TeacherDashboard from "./pages/dashboard/TeacherDashboard";
-import TreasuryDashboard from "./pages/dashboard/TreasuryDashboard";
+import StudentDashboard from "./pages/student/StudentDashboard";
+import StudentCourses from "./pages/student/Student_Courses";
+import TeacherDashboard from "./pages/teacher/TeacherDashboard";
+import TreasuryDashboard from "./pages/treasury/TreasuryDashboard";
 
 function App() {
      return (
@@ -25,17 +26,23 @@ function App() {
                               path="/unauthorized"
                               element={<Unauthorized />}
                          />
-
                          <Route
                               path="/auth/callback"
                               element={<AuthCallback />}
                          />
-
                          <Route
-                              path="/student/*"
+                              path="/student"
                               element={
                                    <PrivateRoute allowedRoles={["student"]}>
                                         <StudentDashboard />
+                                   </PrivateRoute>
+                              }
+                         />
+                         <Route
+                              path="/courses"
+                              element={
+                                   <PrivateRoute allowedRoles={["student"]}>
+                                        <StudentCourses />
                                    </PrivateRoute>
                               }
                          />
@@ -63,7 +70,6 @@ function App() {
                                    </PrivateRoute>
                               }
                          />
-
                          <Route
                               path="*"
                               element={<Navigate to="/" replace />}
