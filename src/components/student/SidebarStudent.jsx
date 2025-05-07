@@ -2,7 +2,6 @@ import { motion } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
 import { AiOutlineFileSearch } from "react-icons/ai";
 import { FaFolder } from "react-icons/fa";
-import { IoLogOutOutline } from "react-icons/io5";
 import LOGO from "../../assets/img/logoVG.jpg";
 // * React icons
 import { AiOutlineAppstore } from "react-icons/ai";
@@ -10,42 +9,12 @@ import { IoIosArrowBack } from "react-icons/io";
 import { MdMenu } from "react-icons/md";
 import { useMediaQuery } from "react-responsive";
 import { NavLink, useLocation } from "react-router-dom";
-import { useAuth } from "../../context/AuthContext";
 
 const SidebarStudent = () => {
      let isTabletMid = useMediaQuery({ query: "(max-width: 768px)" });
      const [open, setOpen] = useState(isTabletMid ? false : true);
      const sidebarRef = useRef();
      const { pathname } = useLocation();
-     const { user, profile, logout } = useAuth();
-
-     const formatName = (fullName) => {
-          if (!fullName) return "";
-
-          const nameParts = fullName.trim().split(" ");
-
-          if (nameParts.length === 3) {
-               return `${nameParts[0]} ${nameParts[1]}`;
-          } else if (nameParts.length >= 4) {
-               return `${nameParts[0]} ${nameParts[nameParts.length - 2]}`;
-          } else {
-               return fullName;
-          }
-     };
-
-     const displayRole =
-          profile?.role === "student"
-               ? "Estudiante"
-               : profile?.role === "teacher"
-               ? "Profesor"
-               : profile?.role === "treasury"
-               ? "Tesorería"
-               : profile?.role === "secretary"
-               ? "Secretaría"
-               : profile?.role === "admin"
-               ? "Administrador"
-               : "No definido";
-     const displayName = formatName(user?.name);
 
      useEffect(() => {
           if (isTabletMid) {
@@ -93,12 +62,12 @@ const SidebarStudent = () => {
             };
 
      return (
-          <div>
+          <div className="h-screen">
                <div
                     onClick={() => setOpen(false)}
-                    className={`md:hidden fixed inset-0 max-h-screen z-[998] bg-black/50 ${
+                    className={`md:hidden fixed inset-0 max-h-screen z-[50] bg-black/50 ${
                          open ? "block" : "hidden"
-                    } `}
+                    }`}
                ></div>
 
                <motion.div
@@ -106,7 +75,7 @@ const SidebarStudent = () => {
                     variants={Nav_animation}
                     initial={{ x: isTabletMid ? -250 : 0 }}
                     animate={open ? "open" : "closed"}
-                    className="bg-gray-900 text-white shadow-xl z-[999] max-w-[16rem] w-[16rem]
+                    className="bg-gray-900 text-white shadow-xl z-[50] max-w-[16rem] w-[16rem]
      overflow-hidden md:relative fixed h-screen
      border-r-0 after:content-[''] after:absolute after:top-0 after:right-0 after:w-[1px] after:h-full
      after:bg-gradient-to-b after:from-slate-700/20 after:via-white/30 after:to-slate-700/20"
@@ -136,10 +105,7 @@ const SidebarStudent = () => {
                                    </NavLink>
                               </li>
                               <li className="text-sm font-extrabold text-gray-600 dark:text-gray-400 hover:bg-gray-800 rounded-2xl">
-                                   <NavLink
-                                        to="/courses"
-                                        className="link"
-                                   >
+                                   <NavLink to="/courses" className="link">
                                         <FaFolder
                                              size={23}
                                              className="min-w-max"
@@ -160,35 +126,6 @@ const SidebarStudent = () => {
                                    </NavLink>
                               </li>
                          </ul>
-
-                         {open && (
-                              <div className="flex flex-col border-t border-slate-300 p-4 gap-4">
-                                   <div className="flex items-center justify-between">
-                                        <div>
-                                             <p className="font-semibold">
-                                                  {displayName}
-                                             </p>
-                                             <p className="text-gray-500">
-                                                  Rol: {displayRole}
-                                             </p>
-                                             <p className="text-gray-500">
-                                                  Dni:{" "}
-                                                  {profile?.document_number}
-                                             </p>
-                                        </div>
-                                   </div>
-
-                                   <motion.button
-                                        onClick={logout}
-                                        className="bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded-md flex items-center gap-2 transition-colors duration-200 w-full justify-center"
-                                        whileHover={{ scale: 1.03 }}
-                                        whileTap={{ scale: 0.97 }}
-                                   >
-                                        <IoLogOutOutline size={18} />
-                                        <span>Cerrar sesión</span>
-                                   </motion.button>
-                              </div>
-                         )}
                     </div>
 
                     <motion.div

@@ -1,10 +1,8 @@
-import { useEffect } from "react";
+import LoadingSpinner from "../components/animations/LoadingSpinner";
 import { useAuth } from "../context/AuthContext";
-import LoadingSpinner from "../components/LoadingSpinner";
 
 function AuthCallback() {
      const { loading, error } = useAuth();
-
 
      return (
           <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50">

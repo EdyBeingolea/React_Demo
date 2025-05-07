@@ -101,3 +101,58 @@
 .active {
      @apply bg-gray-700 text-white;
 }
+
+@keyframes pulse {
+     0% {
+          transform: scale(0.8);
+          opacity: 0.5;
+     }
+     50% {
+          transform: scale(1.2);
+          opacity: 1;
+     }
+     100% {
+          transform: scale(0.8);
+          opacity: 0.5;
+     }
+}
+
+.animate-pulse {
+     animation: pulse 1.5s infinite;
+}
+
+.delay-100 {
+     animation-delay: 0.3s;
+}
+
+.delay-200 {
+     animation-delay: 0.6s;
+}
+
+@keyframes bounce {
+     0%,
+     100% {
+          transform: translateY(0);
+     }
+     50% {
+          transform: translateY(-20px);
+     }
+}
+
+.animate-bounce {
+     animation: bounce 2s infinite;
+}
+
+/* Efecto de fade-in para el overlay */
+@keyframes fadeIn {
+     from {
+          opacity: 0;
+     }
+     to {
+          opacity: 1;
+     }
+}
+
+.bg-opacity-90 {
+     animation: fadeIn 0.3s ease-in-out;
+}

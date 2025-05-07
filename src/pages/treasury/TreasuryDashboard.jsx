@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import LoadingSpinner from "../../components/LoadingSpinner";
+import LoadingSpinner from "../../components/animations/LoadingSpinner";
 import { useAuth } from "../../context/AuthContext";
 
 const TreasuryDashboard = () => {

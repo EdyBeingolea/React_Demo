@@ -20,6 +20,7 @@ export const AuthProvider = ({ children }) => {
           loading: true,
           error: null,
           isAuthenticated: false,
+          isLoggingOut: false,
      });
 
      const location = useLocation();
@@ -40,7 +41,8 @@ export const AuthProvider = ({ children }) => {
                }
           } catch (error) {
                console.log(
-                    "Token expirado o inválido, intentando refrescar...", error
+                    "Token expirado o inválido, intentando refrescar...",
+                    error
                );
 
                if (tokenData.refresh_token) {
@@ -246,20 +248,41 @@ export const AuthProvider = ({ children }) => {
      };
 
      const logout = async () => {
-          await completeLogout();
-          setAuthState({
-               user: null,
-               profile: null,
-               tokens: null,
-               loading: false,
-               error: null,
-               isAuthenticated: false,
-          });
-          navigate("/", { replace: true });
+          setAuthState((prev) => ({
+               ...prev,
+               isLoggingOut: true, // Activar el estado de cierre de sesión
+          }));
+
+          try {
+               await completeLogout();
+               setAuthState({
+                    user: null,
+                    profile: null,
+                    tokens: null,
+                    loading: false,
+                    error: null,
+                    isAuthenticated: false,
+                    isLoggingOut: false, // Desactivar al finalizar
+               });
+               navigate("/", { replace: true });
+          } catch (error) {
+               console.error("Error during logout:", error);
+               setAuthState((prev) => ({
+                    ...prev,
+                    isLoggingOut: false, // Asegurarse de desactivar incluso en caso de error
+               }));
+          }
      };
 
      return (
-          <AuthContext.Provider value={{ ...authState, login, logout }}>
+          <AuthContext.Provider
+               value={{
+                    ...authState,
+                    login,
+                    logout,
+                    isLoggingOut: authState.isLoggingOut,
+               }}
+          >
                {children}
           </AuthContext.Provider>
      );

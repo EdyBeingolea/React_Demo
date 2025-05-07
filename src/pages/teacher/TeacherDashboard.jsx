@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
+import LoadingSpinner from "../../components/animations/LoadingSpinner";
 import { useAuth } from "../../context/AuthContext";
-import LoadingSpinner from "../../components/LoadingSpinner";
 
 const TeacherDashboard = () => {
      const { profile, logout } = useAuth();
