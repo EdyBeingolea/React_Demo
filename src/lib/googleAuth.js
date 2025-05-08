@@ -1,3 +1,7 @@
+// googleAuth.js - Versión segura
+
+import CryptoJS from 'crypto-js';
+
 export const googleConfig = {
      clientId: import.meta.env.VITE_GCP_CLIENT_ID,
      scopes: [
@@ -9,6 +13,148 @@ export const googleConfig = {
      ].join(' '),
      hostedDomain: "vallegrande.edu.pe",
      redirectUri: window.location.origin + "/auth/callback"
+};
+
+// Clave de encriptación derivada del dominio y otros factores
+const getEncryptionKey = () => {
+     const domain = window.location.hostname;
+     const browserInfo = navigator.userAgent;
+     const baseKey = `${domain}-${browserInfo.substring(0, 10)}`;
+     return CryptoJS.SHA256(baseKey).toString();
+};
+
+// Encripta los datos del token antes de almacenarlos
+const encryptData = (data) => {
+     const key = getEncryptionKey();
+     return CryptoJS.AES.encrypt(JSON.stringify(data), key).toString();
+};
+
+// Desencripta los datos del token
+const decryptData = (encryptedData) => {
+     try {
+          const key = getEncryptionKey();
+          const bytes = CryptoJS.AES.decrypt(encryptedData, key);
+          return JSON.parse(bytes.toString(CryptoJS.enc.Utf8));
+     } catch (error) {
+          console.error("Error al desencriptar datos", error);
+          return null;
+     }
+};
+
+// Almacena tokens en IndexedDB de forma encriptada
+export const storeTokens = async (tokenResponse) => {
+     const tokenData = {
+          ...tokenResponse,
+          expiry: Date.now() + (tokenResponse.expires_in * 1000),
+          storedAt: Date.now(),
+          sessionId: tokenResponse.sessionId || generateSessionId(),
+          refreshScheduled: Date.now() + (55 * 60 * 1000) // Programar refresh 5 min antes de expiración
+     };
+
+     await clearTokens();
+
+     // Encriptar datos
+     const encryptedData = encryptData(tokenData);
+
+     // Almacenar en IndexedDB
+     return new Promise((resolve, reject) => {
+          const request = indexedDB.open("secureAuthStorage", 1);
+
+          request.onupgradeneeded = (event) => {
+               const db = event.target.result;
+               if (!db.objectStoreNames.contains("tokens")) {
+                    db.createObjectStore("tokens", { keyPath: "id" });
+               }
+          };
+
+          request.onsuccess = (event) => {
+               const db = event.target.result;
+               const transaction = db.transaction(["tokens"], "readwrite");
+               const store = transaction.objectStore("tokens");
+
+               const storeRequest = store.put({
+                    id: "google_token",
+                    value: encryptedData,
+                    timestamp: Date.now()
+               });
+
+               storeRequest.onsuccess = () => resolve(tokenData);
+               storeRequest.onerror = (e) => reject(e.target.error);
+          };
+
+          request.onerror = (event) => reject(event.target.error);
+     });
+};
+
+// Obtiene los tokens almacenados
+export const getStoredTokens = async () => {
+     return new Promise((resolve, reject) => {
+          const request = indexedDB.open("secureAuthStorage", 1);
+
+          request.onupgradeneeded = (event) => {
+               const db = event.target.result;
+               if (!db.objectStoreNames.contains("tokens")) {
+                    db.createObjectStore("tokens", { keyPath: "id" });
+               }
+          };
+
+          request.onsuccess = (event) => {
+               const db = event.target.result;
+               const transaction = db.transaction(["tokens"], "readonly");
+               const store = transaction.objectStore("tokens");
+
+               const getRequest = store.get("google_token");
+
+               getRequest.onsuccess = () => {
+                    const result = getRequest.result;
+                    if (result && result.value) {
+                         try {
+                              const decryptedData = decryptData(result.value);
+                              resolve(decryptedData);
+                         } catch (error) {
+                              console.error("Error al desencriptar tokens", error);
+                              clearTokens().then(() => resolve(null));
+                         }
+                    } else {
+                         resolve(null);
+                    }
+               };
+
+               getRequest.onerror = () => resolve(null);
+          };
+
+          request.onerror = () => resolve(null);
+     });
+};
+
+export const clearTokens = async () => {
+     return new Promise((resolve) => {
+          document.cookie = 'google_token=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+
+          sessionStorage.removeItem('google_token');
+          sessionStorage.removeItem('auth_state');
+          sessionStorage.removeItem('auth_redirect_after');
+
+          localStorage.removeItem('google_token');
+
+          const request = indexedDB.open("secureAuthStorage", 1);
+
+          request.onsuccess = (event) => {
+               const db = event.target.result;
+               if (db.objectStoreNames.contains("tokens")) {
+                    const transaction = db.transaction(["tokens"], "readwrite");
+                    const store = transaction.objectStore("tokens");
+
+                    const deleteRequest = store.delete("google_token");
+                    deleteRequest.onsuccess = () => resolve();
+                    deleteRequest.onerror = () => resolve();
+               } else {
+                    resolve();
+               }
+          };
+
+          request.onerror = () => resolve();
+     });
 };
 
 export const startGoogleAuth = () => {
@@ -64,7 +210,7 @@ export const exchangeCodeForTokens = async (code) => {
                storedAt: Date.now()
           };
 
-          storeTokens(storedTokens);
+          await storeTokens(storedTokens);
           return storedTokens;
      } catch (error) {
           console.error("Error exchanging code for tokens:", error);
@@ -74,25 +220,6 @@ export const exchangeCodeForTokens = async (code) => {
 
 const generateSessionId = () => {
      return 'session_' + Math.random().toString(36).substr(2, 9) + '_' + Date.now();
-};
-
-export const storeTokens = (tokenResponse) => {
-     const tokenData = {
-          ...tokenResponse,
-          expiry: Date.now() + (tokenResponse.expires_in * 1000),
-          storedAt: Date.now(),
-          sessionId: tokenResponse.sessionId || generateSessionId()
-     };
-
-     clearTokens();
-
-     localStorage.setItem('google_token', JSON.stringify(tokenData));
-     return tokenData;
-};
-
-export const getStoredTokens = () => {
-     const tokenData = localStorage.getItem('google_token');
-     return tokenData ? JSON.parse(tokenData) : null;
 };
 
 export const refreshAccessToken = async (refreshToken) => {
@@ -123,7 +250,7 @@ export const refreshAccessToken = async (refreshToken) => {
 
           if (!response.ok) {
                console.error("Error en respuesta:", responseData);
-               clearTokens();
+               await clearTokens();
                throw new Error(`Error refreshing token: ${responseData.error_description || responseData.error || 'Unknown error'}`);
           }
 
@@ -136,15 +263,7 @@ export const refreshAccessToken = async (refreshToken) => {
           };
      } catch (error) {
           console.error("Error al refrescar token:", error);
-          clearTokens();
+          await clearTokens();
           throw error;
      }
-};
-
-export const clearTokens = () => {
-     localStorage.removeItem('google_token');
-     sessionStorage.removeItem('google_token');
-     sessionStorage.removeItem('auth_state');
-     sessionStorage.removeItem('auth_redirect_after');
-     document.cookie = 'google_token=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;';
 };

@@ -7,12 +7,10 @@ const PrivateRoute = ({ children, allowedRoles }) => {
      const { isAuthenticated, loading, profile, isLoggingOut } = useAuth();
      const location = useLocation();
 
-     // Si está cerrando sesión, mostrar la animación
      if (isLoggingOut) {
           return <LogoutAnimation />;
      }
 
-     // Verificaciones originales
      if (loading) return <LoadingSpinner />;
 
      if (!isAuthenticated) {

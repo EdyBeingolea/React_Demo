@@ -85,7 +85,7 @@ const Navbar = () => {
           >
                <div className="flex-1 flex items-center justify-center">
                     <span className="text-white font-medium text-base">
-                         Sección Estudiante
+                         Sección {displayRole}
                     </span>
                </div>
 
