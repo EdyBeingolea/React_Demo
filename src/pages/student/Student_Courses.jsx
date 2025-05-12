@@ -12,6 +12,24 @@ import Navbar from "../../components/Navbar";
 import SidebarStudent from "../../components/student/SidebarStudent";
 import { useAuth } from "../../context/AuthContext";
 
+const Notification = ({ message, type = "success", onClose }) => {
+     const bgColor = type === "success" ? "bg-green-600" : "bg-red-600";
+
+     return (
+          <div
+               className={`fixed top-4 right-4 ${bgColor} text-white px-6 py-3 rounded-lg shadow-lg flex items-center animate-fade-in z-50`}
+          >
+               <span>{message}</span>
+               <button
+                    onClick={onClose}
+                    className="ml-4 text-white hover:text-gray-200"
+               >
+                    <FiX />
+               </button>
+          </div>
+     );
+};
+
 const toRoman = (num) => {
      if (num === undefined || num === null) return "-";
      const romanNumerals = {
@@ -39,7 +57,7 @@ const toRoman = (num) => {
 };
 
 const StudentCourses = () => {
-     const { profile } = useAuth();
+     const { profile, tokens } = useAuth();
      const [isLoading, setIsLoading] = useState(true);
      const [searchTerm, setSearchTerm] = useState("");
      const [courses, setCourses] = useState([]);
@@ -50,6 +68,9 @@ const StudentCourses = () => {
      const [showModal, setShowModal] = useState(false);
      const [message, setMessage] = useState("");
      const [messageError, setMessageError] = useState("");
+     const [isSubmitting, setIsSubmitting] = useState(false);
+     const [submitSuccess, setSubmitSuccess] = useState(false);
+     const [notification, setNotification] = useState(null);
 
      useEffect(() => {
           const fetchRecoverableUnits = async () => {
@@ -75,7 +96,9 @@ const StudentCourses = () => {
                          shortName: unit.didactic_units.short_name,
                          isApproved: unit.is_approved,
                          codePeriod: unit.periods.code,
+                         year: unit.periods.year,
                     }));
+
                     setCourses(mappedCourses);
                     setError(null);
                } catch (err) {
@@ -99,7 +122,6 @@ const StudentCourses = () => {
                (sum, course) => sum + course.credits,
                0
           );
-          // Mostrar créditos restantes como negativo si se seleccionó un curso de 4.5 créditos
           setRemainingCredits(maxCredits - usedCredits);
      }, [selectedCourses]);
 
@@ -179,41 +201,133 @@ const StudentCourses = () => {
           setMessageError("");
      };
 
-     const handleSubmit = () => {
+     const handleSubmit = async () => {
+          if (isSubmitting) return;
+
+          const documentNumber = profile?.document_number;
           if (!message.trim()) {
                setMessageError("El mensaje es obligatorio.");
                return;
           }
 
-          console.log("Enviando solicitud:", {
-               student: {
-                    name: profile?.name,
-                    email: profile?.email,
-               },
-               recipientEmail: "lmanzo@vallegrande.edu.pe",
-               period: selectedCourses[0]?.codePeriod,
-               selectedCourses,
-               totalCredits: selectedCourses.reduce(
-                    (sum, course) => sum + course.credits,
-                    0
-               ),
-               totalCost: selectedCourses.reduce(
-                    (sum, course) => sum + course.cost,
-                    0
-               ),
-               message,
-          });
+          if (selectedCourses.length === 0) {
+               setError("Debe seleccionar al menos un curso.");
+               return;
+          }
 
-          // Reset form and close modal (in a real app you'd wait for backend response)
-          setSelectedCourses([]);
-          setShowModal(false);
-          setMessage("");
-          setMessageError("");
+          setIsSubmitting(true);
+          setError(null);
+
+          try {
+               const currentYear = new Date().getFullYear();
+               const lastNumber = parseInt(
+                    localStorage.getItem("lastCorrelativoNumber") || "0",
+                    10
+               );
+               const nextNumber = lastNumber + 1;
+               const paddedNumber = nextNumber.toString().padStart(5, "0");
+               const correlativo = `N°${paddedNumber}-${currentYear}`;
+               localStorage.setItem(
+                    "lastCorrelativoNumber",
+                    nextNumber.toString()
+               );
+               const codePeriod =
+                    selectedCourses[0]?.codePeriod || "PERIODO_NO_DISPONIBLE";
+
+               const requestData = {
+                    type: "studentRequest",
+                    accessToken: tokens?.access_token || "",
+                    studentEmail: profile?.email,
+                    studentName: profile?.name,
+                    message: message,
+                    codePeriod: codePeriod,
+                    documentNumber: documentNumber,
+                    courses: selectedCourses.map((course) => ({
+                         unidadDidactica: course.name,
+                         creditos: course.credits,
+                         costo: course.cost.toFixed(2),
+                         grade: course.grade,
+                    })),
+                    totalCost: selectedCourses
+                         .reduce((sum, course) => sum + course.cost, 0)
+                         .toFixed(2),
+                    correlativo: correlativo,
+               };
+
+               console.log(
+                    "Enviando solicitud a través de la API Flask:",
+                    requestData
+               );
+
+               const API_URL = import.meta.env.VITE_BACKEND_URL;
+
+               const response = await axios.post(
+                    `${API_URL}/api/send-recovery-request`,
+                    requestData,
+                    {
+                         headers: {
+                              "Content-Type": "application/json",
+                              Charset: "UTF-8",
+                         },
+                         timeout: 10000,
+                    }
+               );
+
+               console.log("Respuesta recibida:", response.data);
+
+               if (response.data.success) {
+                    setSubmitSuccess(true);
+                    localStorage.setItem("lastCorrelativo", correlativo);
+
+                    setNotification({
+                         message: "Solicitud enviada con éxito",
+                         type: "success",
+                    });
+
+                    setTimeout(() => {
+                         setNotification(null);
+                         setSelectedCourses([]);
+                         setShowModal(false);
+                         setMessage("");
+                         setSubmitSuccess(false);
+                    }, 3000);
+               } else {
+                    throw new Error(
+                         response.data.error ||
+                              "Error desconocido en la respuesta"
+                    );
+               }
+          } catch (error) {
+               console.error("Error al enviar la solicitud:", error);
+
+               setNotification({
+                    message: "Error al enviar la solicitud",
+                    type: "error",
+               });
+
+               let errorMessage = "Error al enviar la solicitud.";
+
+               if (error.response) {
+                    errorMessage += ` ${
+                         error.response.data?.error ||
+                         `Código: ${error.response.status}`
+                    }`;
+               } else if (error.request) {
+                    errorMessage +=
+                         " No se recibió respuesta del servidor. Verifique su conexión a internet.";
+               } else {
+                    errorMessage += ` ${error.message}`;
+               }
+
+               setError(errorMessage);
+          } finally {
+               setIsSubmitting(false);
+          }
      };
 
      const isCourseSelectable = (course) => {
           if (selectedCourses.some((c) => c.id === course.id)) {
-               return true; // Ya está seleccionado
+               return true;
           }
 
           const totalSelectedCredits = selectedCourses.reduce(
@@ -221,12 +335,10 @@ const StudentCourses = () => {
                0
           );
 
-          // Excepción: Permitir seleccionar un solo curso de 4.5 créditos aunque supere el límite base
           if (selectedCourses.length === 0 && course.credits === 4.5) {
                return true;
           }
 
-          // Caso normal: Verificar que no se exceda el límite de créditos
           return totalSelectedCredits + course.credits <= maxCredits;
      };
 
@@ -947,18 +1059,58 @@ const StudentCourses = () => {
                                         </button>
                                         <button
                                              onClick={handleSubmit}
-                                             className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors flex items-center"
                                              disabled={
+                                                  isSubmitting ||
                                                   selectedCourses.length === 0
                                              }
+                                             className={`px-6 py-3 ${
+                                                  isSubmitting
+                                                       ? "bg-blue-700 cursor-not-allowed"
+                                                       : "bg-blue-600 hover:bg-blue-700"
+                                             } text-white rounded-lg transition-colors flex items-center justify-center min-w-32`}
                                         >
-                                             Enviar solicitud
-                                             <FiArrowRight className="ml-2" />
+                                             {isSubmitting ? (
+                                                  <>
+                                                       <svg
+                                                            className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                                                            xmlns="http://www.w3.org/2000/svg"
+                                                            fill="none"
+                                                            viewBox="0 0 24 24"
+                                                       >
+                                                            <circle
+                                                                 className="opacity-25"
+                                                                 cx="12"
+                                                                 cy="12"
+                                                                 r="10"
+                                                                 stroke="currentColor"
+                                                                 strokeWidth="4"
+                                                            ></circle>
+                                                            <path
+                                                                 className="opacity-75"
+                                                                 fill="currentColor"
+                                                                 d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                                                            ></path>
+                                                       </svg>
+                                                       Enviando...
+                                                  </>
+                                             ) : (
+                                                  <>
+                                                       Enviar solicitud
+                                                       <FiArrowRight className="ml-2" />
+                                                  </>
+                                             )}
                                         </button>
                                    </div>
                               </div>
                          </div>
                     </div>
+               )}
+               {notification && (
+                    <Notification
+                         message={notification.message}
+                         type={notification.type}
+                         onClose={() => setNotification(null)}
+                    />
                )}
           </div>
      );

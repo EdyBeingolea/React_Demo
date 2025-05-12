@@ -1,5 +1,3 @@
-// googleAuth.js - Versión segura
-
 import CryptoJS from 'crypto-js';
 
 export const googleConfig = {
@@ -15,7 +13,6 @@ export const googleConfig = {
      redirectUri: window.location.origin + "/auth/callback"
 };
 
-// Clave de encriptación derivada del dominio y otros factores
 const getEncryptionKey = () => {
      const domain = window.location.hostname;
      const browserInfo = navigator.userAgent;
@@ -23,13 +20,11 @@ const getEncryptionKey = () => {
      return CryptoJS.SHA256(baseKey).toString();
 };
 
-// Encripta los datos del token antes de almacenarlos
 const encryptData = (data) => {
      const key = getEncryptionKey();
      return CryptoJS.AES.encrypt(JSON.stringify(data), key).toString();
 };
 
-// Desencripta los datos del token
 const decryptData = (encryptedData) => {
      try {
           const key = getEncryptionKey();
@@ -41,22 +36,19 @@ const decryptData = (encryptedData) => {
      }
 };
 
-// Almacena tokens en IndexedDB de forma encriptada
 export const storeTokens = async (tokenResponse) => {
      const tokenData = {
           ...tokenResponse,
           expiry: Date.now() + (tokenResponse.expires_in * 1000),
           storedAt: Date.now(),
           sessionId: tokenResponse.sessionId || generateSessionId(),
-          refreshScheduled: Date.now() + (55 * 60 * 1000) // Programar refresh 5 min antes de expiración
+          refreshScheduled: Date.now() + (55 * 60 * 1000)
      };
 
      await clearTokens();
 
-     // Encriptar datos
      const encryptedData = encryptData(tokenData);
 
-     // Almacenar en IndexedDB
      return new Promise((resolve, reject) => {
           const request = indexedDB.open("secureAuthStorage", 1);
 
@@ -86,7 +78,6 @@ export const storeTokens = async (tokenResponse) => {
      });
 };
 
-// Obtiene los tokens almacenados
 export const getStoredTokens = async () => {
      return new Promise((resolve, reject) => {
           const request = indexedDB.open("secureAuthStorage", 1);
