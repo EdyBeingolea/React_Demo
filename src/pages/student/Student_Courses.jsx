@@ -80,13 +80,39 @@ const StudentCourses = () => {
                     if (!documentNumber) {
                          throw new Error("Número de documento no disponible");
                     }
-                    const response = await axios.get(
-                         `${
-                              import.meta.env.VITE_BACKEND_URL
-                         }/users/recoverable-units/by-dni?document_number=${documentNumber}`
+                    const validationResponse = await axios.get(
+                         `${import.meta.env.VITE_BACKEND_URL}/student/${
+                              profile.id
+                         }/active-requests`
                     );
 
-                    const mappedCourses = response.data.map((unit) => ({
+                    if (validationResponse.data.count > 0) {
+                         setError(
+                              "Tienes solicitudes pendientes. No puedes crear nuevas solicitudes hasta que se resuelvan las anteriores."
+                         );
+                         setIsLoading(false);
+                         return;
+                    }
+
+                    const recoveringResponse = await axios.get(
+                         `${import.meta.env.VITE_BACKEND_URL}/student/${
+                              profile.id
+                         }/recovering-units`
+                    );
+
+                    const recoveringIds = new Set(
+                         recoveringResponse.data.data.map((unit) => unit.id)
+                    );
+
+                    const unitsResponse = await axios.get(
+                         `${
+                              import.meta.env.VITE_BACKEND_URL
+                         }/users/recoverable-units/by-dni?document_number=${
+                              profile.document_number
+                         }&exclude=${Array.from(recoveringIds).join(",")}`
+                    );
+
+                    const mappedCourses = unitsResponse.data.map((unit) => ({
                          id: unit.didactic_unit_id,
                          name: unit.didactic_units.unit_name,
                          cost: unit.didactic_units.cost,
@@ -99,6 +125,7 @@ const StudentCourses = () => {
                          year: unit.periods.year,
                     }));
 
+                    console.log(mappedCourses);
                     setCourses(mappedCourses);
                     setError(null);
                } catch (err) {
@@ -201,6 +228,30 @@ const StudentCourses = () => {
           setMessageError("");
      };
 
+     const getNextCorrelative = async () => {
+          try {
+               const response = await axios.get(
+                    `${import.meta.env.VITE_BACKEND_URL}/api/requests/last-correlative`
+               );
+
+               if (response.data && response.data.success && response.data.last_correlative) {
+                    const match = response.data.last_correlative.match(/N[°\u00b0](\d+)-/);
+                    if (match && match[1]) {
+                         const nextNumber = parseInt(match[1], 10) + 1;
+                         const currentYear = new Date().getFullYear();
+                         const paddedNumber = nextNumber.toString().padStart(5, '0');
+                         return `N°${paddedNumber}-${currentYear}`;
+                    }
+               }
+
+               return `N°00001-${new Date().getFullYear()}`;
+
+          } catch (error) {
+               console.error('Error al obtener el último correlativo:', error);
+               throw new Error('No se pudo generar el número de correlativo');
+          }
+     };
+
      const handleSubmit = async () => {
           if (isSubmitting) return;
 
@@ -219,18 +270,7 @@ const StudentCourses = () => {
           setError(null);
 
           try {
-               const currentYear = new Date().getFullYear();
-               const lastNumber = parseInt(
-                    localStorage.getItem("lastCorrelativoNumber") || "0",
-                    10
-               );
-               const nextNumber = lastNumber + 1;
-               const paddedNumber = nextNumber.toString().padStart(5, "0");
-               const correlativo = `N°${paddedNumber}-${currentYear}`;
-               localStorage.setItem(
-                    "lastCorrelativoNumber",
-                    nextNumber.toString()
-               );
+               const correlativo = await getNextCorrelative();
                const codePeriod =
                     selectedCourses[0]?.codePeriod || "PERIODO_NO_DISPONIBLE";
 
@@ -290,6 +330,7 @@ const StudentCourses = () => {
                          setShowModal(false);
                          setMessage("");
                          setSubmitSuccess(false);
+                         window.location.reload();
                     }, 3000);
                } else {
                     throw new Error(
@@ -320,6 +361,9 @@ const StudentCourses = () => {
                }
 
                setError(errorMessage);
+               setTimeout(() => {
+                    setNotification(null);
+               }, 3000);
           } finally {
                setIsSubmitting(false);
           }
@@ -837,8 +881,22 @@ const StudentCourses = () => {
                                                                  Nombre completo
                                                             </label>
                                                             <div className="bg-gray-700 p-3 rounded-lg text-white">
-                                                                 {profile?.name ||
-                                                                      "No disponible"}
+                                                                 {profile
+                                                                      ? `${
+                                                                             profile.name ||
+                                                                             ""
+                                                                        } ${
+                                                                             profile.middle_name ||
+                                                                             ""
+                                                                        } ${
+                                                                             profile.last_name ||
+                                                                             ""
+                                                                        } ${
+                                                                             profile.second_last_name ||
+                                                                             ""
+                                                                        }`.trim() ||
+                                                                        "No disponible"
+                                                                      : "No disponible"}
                                                             </div>
                                                        </div>
                                                        <div>

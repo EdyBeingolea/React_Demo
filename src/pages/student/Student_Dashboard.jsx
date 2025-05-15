@@ -5,8 +5,10 @@ import LogoutAnimation from "../../components/animations/LogoutAnimation";
 import Navbar from "../../components/Navbar";
 import SidebarStudent from "../../components/student/SidebarStudent";
 import { useAuth } from "../../context/AuthContext";
+import { useNavigate } from "react-router-dom";
 
 const StudentDashboard = () => {
+     const navigate = useNavigate();
      const { profile, isLoggingOut } = useAuth();
      const [isLoading, setIsLoading] = useState(true);
 
@@ -82,7 +84,7 @@ const StudentDashboard = () => {
                                              Cada unidad que completas te acerca
                                              más a tu meta.
                                         </p>
-                                        <button className="bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700 transition-colors">
+                                        <button className="bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700 transition-colors" onClick={() => navigate("/courses")}>
                                              Ver mis cursos de recuperación
                                         </button>
                                    </div>
