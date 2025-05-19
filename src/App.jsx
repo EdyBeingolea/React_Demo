@@ -80,7 +80,7 @@ const AppContent = () => {
             <Route
                 path="/secretary/*"
                 element={
-                    <PrivateRoute allowedRoles={["secretary"]}>
+                    <PrivateRoute allowedRoles={["secretariat"]}>
                         <SecretaryDashboard />
                     </PrivateRoute>
                 }
