@@ -17,6 +17,7 @@ import StudentCourses from "./pages/student/Student_Courses";
 import TeacherDashboard from "./pages/teacher/TeacherDashboard";
 import TreasuryDashboard from "./pages/treasury/TreasuryDashboard";
 import { useAuth } from "./context/AuthContext";
+import WelfareDashboard from "./pages/welfare/Welfare_Dashboard";
 
 const AppContent = () => {
     const { isLoggingOut } = useAuth();
@@ -72,10 +73,19 @@ const AppContent = () => {
                 path="/welfare/*"
                 element={
                     <PrivateRoute allowedRoles={["welfare"]}>
-                        <TreasuryDashboard />
+                        <WelfareDashboard />
                     </PrivateRoute>
                 }
             />
+            <Route
+                path="/secretary/*"
+                element={
+                    <PrivateRoute allowedRoles={["secretary"]}>
+                        <SecretaryDashboard />
+                    </PrivateRoute>
+                }
+            />
+             <Route
             <Route
                 path="/dashboard"
                 element={
