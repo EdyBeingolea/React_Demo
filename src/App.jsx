@@ -18,6 +18,7 @@ import TeacherDashboard from "./pages/teacher/TeacherDashboard";
 import TreasuryDashboard from "./pages/treasury/TreasuryDashboard";
 import { useAuth } from "./context/AuthContext";
 import WelfareDashboard from "./pages/welfare/Welfare_Dashboard";
+import SecretaryDashboard from "./pages/secretary/SecretaryDashboard";
 
 const AppContent = () => {
     const { isLoggingOut } = useAuth();

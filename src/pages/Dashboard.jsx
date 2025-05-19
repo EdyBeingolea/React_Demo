@@ -1,6 +1,6 @@
 import { Navigate } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
 import LoadingSpinner from "../components/animations/LoadingSpinner";
+import { useAuth } from "../context/AuthContext";
 
 const Dashboard = () => {
      const { profile, loading } = useAuth();
@@ -14,6 +14,10 @@ const Dashboard = () => {
                return <Navigate to="/teacher" replace />;
           case "treasury":
                return <Navigate to="/treasury" replace />;
+          case "welfare":
+               return <Navigate to="/welfare" replace />;
+          case "secretariat":
+               return <Navigate to="/secretary" replace />;
           default:
                return <Navigate to="/unauthorized" replace />;
      }
