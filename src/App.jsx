@@ -85,7 +85,6 @@ const AppContent = () => {
                     </PrivateRoute>
                 }
             />
-             <Route
             <Route
                 path="/dashboard"
                 element={
