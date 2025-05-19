@@ -6,7 +6,7 @@ import {
 } from "react-router-dom";
 import "./App.css";
 import PrivateRoute from "./components/PrivateRoute";
-import {AuthProvider} from "./context/AuthContext";
+import { AuthProvider } from "./context/AuthContext";
 import LogoutAnimation from "./components/animations/LogoutAnimation";
 import AuthCallback from "./pages/AuthCallback";
 import Dashboard from "./pages/Dashboard";
@@ -16,31 +16,31 @@ import StudentDashboard from "./pages/student/Student_Dashboard";
 import StudentCourses from "./pages/student/Student_Courses";
 import TeacherDashboard from "./pages/teacher/TeacherDashboard";
 import TreasuryDashboard from "./pages/treasury/TreasuryDashboard";
-import {useAuth} from "./context/AuthContext";
+import { useAuth } from "./context/AuthContext";
 
 const AppContent = () => {
-    const {isLoggingOut} = useAuth();
+    const { isLoggingOut } = useAuth();
 
     if (isLoggingOut) {
-        return <LogoutAnimation/>;
+        return <LogoutAnimation />;
     }
 
     return (
         <Routes>
-            <Route path="/" element={<Login/>}/>
+            <Route path="/" element={<Login />} />
             <Route
                 path="/unauthorized"
-                element={<Unauthorized/>}
+                element={<Unauthorized />}
             />
             <Route
                 path="/auth/callback"
-                element={<AuthCallback/>}
+                element={<AuthCallback />}
             />
             <Route
                 path="/student"
                 element={
                     <PrivateRoute allowedRoles={["student"]}>
-                        <StudentDashboard/>
+                        <StudentDashboard />
                     </PrivateRoute>
                 }
             />
@@ -48,7 +48,7 @@ const AppContent = () => {
                 path="/courses"
                 element={
                     <PrivateRoute allowedRoles={["student"]}>
-                        <StudentCourses/>
+                        <StudentCourses />
                     </PrivateRoute>
                 }
             />
@@ -56,7 +56,7 @@ const AppContent = () => {
                 path="/teacher/*"
                 element={
                     <PrivateRoute allowedRoles={["teacher"]}>
-                        <TeacherDashboard/>
+                        <TeacherDashboard />
                     </PrivateRoute>
                 }
             />
@@ -64,7 +64,15 @@ const AppContent = () => {
                 path="/treasury/*"
                 element={
                     <PrivateRoute allowedRoles={["treasury"]}>
-                        <TreasuryDashboard/>
+                        <TreasuryDashboard />
+                    </PrivateRoute>
+                }
+            />
+             <Route
+                path="/welfare/*"
+                element={
+                    <PrivateRoute allowedRoles={["welfare"]}>
+                        <TreasuryDashboard />
                     </PrivateRoute>
                 }
             />
@@ -72,13 +80,13 @@ const AppContent = () => {
                 path="/dashboard"
                 element={
                     <PrivateRoute>
-                        <Dashboard/>
+                        <Dashboard />
                     </PrivateRoute>
                 }
             />
             <Route
                 path="*"
-                element={<Navigate to="/" replace/>}
+                element={<Navigate to="/" replace />}
             />
         </Routes>
     );
@@ -88,7 +96,7 @@ function App() {
     return (
         <Router>
             <AuthProvider>
-                <AppContent/>
+                <AppContent />
             </AuthProvider>
         </Router>
     );

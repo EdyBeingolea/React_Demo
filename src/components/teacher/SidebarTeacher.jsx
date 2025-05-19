@@ -1,4 +1,4 @@
-import { color, motion } from "framer-motion";
+import { motion } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
 import { AiOutlineFileSearch } from "react-icons/ai";
 import { IoLogOutOutline } from "react-icons/io5";
@@ -125,7 +125,10 @@ const SidebarTeacher = () => {
 
                     <div className="flex flex-col text-sm h-full">
                          <ul className="whitespace-pre px-2.5 text-[0.9rem] py-5 flex flex-col gap-1  font-medium overflow-x-hidden scrollbar-thin scrollbar-track-white scrollbar-thumb-slate-100  md:h-[68%] h-[70%]">
-                              <li className="text-sm font-extrabold text-gray-600 dark:text-gray-400 hover:bg-gray-800 rounded-2xl">
+                              <li
+                                   classN
+                                   ame="text-sm font-extrabold text-gray-600 dark:text-gray-400 hover:bg-gray-800 rounded-2xl"
+                              >
                                    <NavLink to={"/student"} className="link">
                                         <AiOutlineAppstore
                                              size={23}

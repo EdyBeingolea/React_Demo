@@ -2,7 +2,7 @@ import { useNavigate } from "react-router-dom";
 import LoadingSpinner from "../../components/animations/LoadingSpinner";
 import { useAuth } from "../../context/AuthContext";
 
-const TeacherDashboard = () => {
+const WelfareDashboard = () => {
      const { profile, logout } = useAuth();
      const navigate = useNavigate();
 
@@ -10,9 +10,8 @@ const TeacherDashboard = () => {
 
      return (
           <div className="p-6">
-          
                <div className="flex justify-between items-center mb-6">
-                    <h1 className="text-2xl font-bold">Panel del Profesor</h1>
+                    <h1 className="text-2xl font-bold">Panel de bienestar del estudiante</h1>
                     <button
                          onClick={logout}
                          className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
@@ -33,4 +32,4 @@ const TeacherDashboard = () => {
      );
 };
 
-export default TeacherDashboard;
+export default WelfareDashboard;
