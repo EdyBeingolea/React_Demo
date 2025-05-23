@@ -21,7 +21,7 @@ const Navbar = () => {
           }
      };
 
-     const displayRole =
+        const displayRole =
           profile?.role === "student"
                ? "Estudiante"
                : profile?.role === "teacher"
@@ -30,6 +30,8 @@ const Navbar = () => {
                ? "Tesorería"
                : profile?.role === "secretary"
                ? "Secretaría"
+               : profile?.role === "welfare"
+               ? "Bienestar del Estudiante"
                : profile?.role === "admin"
                ? "Administrador"
                : "No definido";

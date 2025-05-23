@@ -19,6 +19,9 @@ import TreasuryDashboard from "./pages/treasury/TreasuryDashboard";
 import { useAuth } from "./context/AuthContext";
 import WelfareDashboard from "./pages/welfare/Welfare_Dashboard";
 import SecretaryDashboard from "./pages/secretary/SecretaryDashboard";
+import WalfareSolicitudes from "./pages/welfare/Welfare_Solicitudes";
+import WalfareSolicitudesRechazadas from "./pages/welfare/Welfare_Solicitudes_Rechazadas";
+import WalfareSolicitudesAceptadas from "./pages/welfare/Welfare_Solicitudes_Aceptadas";
 
 const AppContent = () => {
     const { isLoggingOut } = useAuth();
@@ -71,10 +74,34 @@ const AppContent = () => {
                 }
             />
              <Route
-                path="/welfare/*"
+                path="/welfare"
                 element={
                     <PrivateRoute allowedRoles={["welfare"]}>
                         <WelfareDashboard />
+                    </PrivateRoute>
+                }
+            />
+            <Route 
+                path="/welfare/solicitudes"
+                element={
+                    <PrivateRoute allowedRoles={["welfare"]}>
+                        <WalfareSolicitudes />
+                    </PrivateRoute>
+                }
+            />
+            <Route 
+                path="/welfare/solicitudesAceptadas"
+                element={
+                    <PrivateRoute allowedRoles={["welfare"]}>
+                        <WalfareSolicitudesAceptadas />
+                    </PrivateRoute>
+                }
+            />
+            <Route 
+                path="/welfare/solicitudesRechazadas"
+                element={
+                    <PrivateRoute allowedRoles={["welfare"]}>
+                        <WalfareSolicitudesRechazadas />
                     </PrivateRoute>
                 }
             />
