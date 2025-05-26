@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
-import { FiSearch, FiArrowRight, FiCheck, FiX } from "react-icons/fi";
+import { FiSearch, FiArrowRight, FiCheck, FiX, FiCopy } from "react-icons/fi";
 import Navbar from "../../components/Navbar";
 import SidebarWalfare from "../../components/welfare/SidebarWalfare";
 import LoadingSpinner from "../../components/animations/LoadingSpinner";
@@ -28,6 +28,7 @@ const WalfareSolicitudes = () => {
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [notification, setNotification] = useState(null);
+  const [paymentJson, setPaymentJson] = useState(null);
 
   // Cargar solo las solicitudes pendientes
   useEffect(() => {
@@ -35,11 +36,8 @@ const WalfareSolicitudes = () => {
       try {
         setIsLoading(true);
         const response = await axios.get(
-          `${
-            import.meta.env.VITE_BACKEND_URL
-          }/recovery-requests/filtered?status=pendiente`
+          `${import.meta.env.VITE_BACKEND_URL}/recovery-requests/filtered?status=pendiente`
         );
-        console.log("Respuesta solicitudes:", response.data); // <-- Agrega esto
 
         // Ajusta según la estructura real de la respuesta
         const data = Array.isArray(response.data)
@@ -82,7 +80,49 @@ const WalfareSolicitudes = () => {
 
   const handleViewDetails = (request) => {
     setSelectedRequest(request);
+    setPaymentJson(null); // Resetear el JSON al abrir un nuevo modal
     setShowModal(true);
+  };
+
+  // Función para generar los datos de pago
+  const generatePaymentData = (approvalData, requestData) => {
+    const today = new Date();
+    const paymentDates = [today];
+    
+    // Generar fechas futuras según las cuotas
+    for (let i = 1; i < approvalData.installments; i++) {
+      const nextDate = new Date(today);
+      nextDate.setMonth(nextDate.getMonth() + i);
+      paymentDates.push(nextDate);
+    }
+
+    // Formatear fechas como strings
+    const formattedDates = paymentDates.map(date => 
+      date.toLocaleDateString('es-PE', { 
+        year: 'numeric', 
+        month: '2-digit', 
+        day: '2-digit' 
+      })
+    );
+
+    return {
+      estudiante: requestData.student_name,
+      dni: requestData.document_number,
+      carrera: requestData.career_name,
+      costo_total: requestData.total_cost,
+      cuotas: approvalData.installments,
+      pagos: formattedDates.map((date, index) => ({
+        numero_cuota: index + 1,
+        fecha_pago: date,
+        monto: (requestData.total_cost / approvalData.installments).toFixed(2),
+        estado: "pendiente"
+      })),
+      fecha_autorizacion: today.toLocaleDateString('es-PE', { 
+        year: 'numeric', 
+        month: '2-digit', 
+        day: '2-digit' 
+      })
+    };
   };
 
   const handleProcessRequest = async (action, requestId) => {
@@ -91,20 +131,24 @@ const WalfareSolicitudes = () => {
       let successMessage = "";
 
       if (action === "approve") {
-        endpoint = `${
-          import.meta.env.VITE_BACKEND_URL
-        }/recovery-requests/${requestId}/authorize`;
+        endpoint = `${import.meta.env.VITE_BACKEND_URL}/recovery-requests/${requestId}/authorize`;
         successMessage = "Solicitud aprobada exitosamente";
       } else {
-        endpoint = `${
-          import.meta.env.VITE_BACKEND_URL
-        }/recovery-requests/${requestId}/reject`;
+        endpoint = `${import.meta.env.VITE_BACKEND_URL}/recovery-requests/${requestId}/reject`;
         successMessage = "Solicitud rechazada exitosamente";
       }
 
       const response = await axios.post(endpoint);
 
       if (response.data.success) {
+        // Generar el JSON con los datos de pago si es aprobación
+        if (action === "approve") {
+          const paymentData = generatePaymentData(response.data.data, selectedRequest);
+          setPaymentJson(paymentData);
+          console.log("JSON de pagos generado:", paymentData); // Mostrar en consola
+        }
+        setShowModal(false); // <-- Cierra el modal en ambos casos
+
         // Eliminar la solicitud procesada de la lista
         setRequests(requests.filter((req) => req.id !== requestId));
 
@@ -112,29 +156,31 @@ const WalfareSolicitudes = () => {
           message: successMessage,
           type: "success",
         });
-
-        setShowModal(false);
       } else {
-        throw new Error(
-          response.data.error || "Error al procesar la solicitud"
-        );
+        throw new Error(response.data.error || "Error al procesar la solicitud");
       }
     } catch (error) {
       console.error("Error processing request:", error);
       setNotification({
-        message:
-          error.response?.data?.error || "Error al procesar la solicitud",
+        message: error.response?.data?.error || "Error al procesar la solicitud",
         type: "error",
       });
-    } finally {
-      setNotification({ message: successMessage, type: "success" });
-      setTimeout(() => setNotification(null), 3000);
     }
+  };
+
+  const copyToClipboard = () => {
+    navigator.clipboard.writeText(JSON.stringify(paymentJson, null, 2));
+    setNotification({
+      message: "JSON copiado al portapapeles",
+      type: "success"
+    });
   };
 
   const getStatusBadge = (status) => {
     const statusClasses = {
       pendiente: "bg-yellow-500/20 text-yellow-400",
+      autorizado: "bg-green-500/20 text-green-400",
+      rechazado: "bg-red-500/20 text-red-400"
     };
 
     return (
@@ -279,7 +325,10 @@ const WalfareSolicitudes = () => {
                   Detalles de Solicitud
                 </h2>
                 <button
-                  onClick={() => setShowModal(false)}
+                  onClick={() => {
+                    setShowModal(false);
+                    setPaymentJson(null);
+                  }}
                   className="text-gray-400 hover:text-white"
                 >
                   <FiX size={24} />
@@ -405,6 +454,28 @@ const WalfareSolicitudes = () => {
                   </div>
                 </div>
               </div>
+
+              {/* Mostrar JSON de pagos si existe */}
+              {/*
+              {paymentJson && (
+                <div className="mt-6 bg-gray-800 p-4 rounded-lg">
+                  <div className="flex justify-between items-center mb-2">
+                    <h3 className="text-lg font-medium text-white">
+                      Detalles de Pagos
+                    </h3>
+                    <button 
+                      onClick={copyToClipboard}
+                      className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm flex items-center"
+                    >
+                      <FiCopy className="mr-1" /> Copiar JSON
+                    </button>
+                  </div>
+                  <pre className="bg-gray-900 p-4 rounded overflow-auto text-sm text-gray-300 max-h-60">
+                    {JSON.stringify(paymentJson, null, 2)}
+                  </pre>
+                </div>
+              )}
+              */}
 
               {/* Botones de acción */}
               <div className="flex justify-end space-x-4 mt-6">
