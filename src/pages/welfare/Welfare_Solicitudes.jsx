@@ -29,6 +29,7 @@ const WalfareSolicitudes = () => {
   const [showModal, setShowModal] = useState(false);
   const [notification, setNotification] = useState(null);
   const [paymentJson, setPaymentJson] = useState(null);
+  const [processing, setProcessing] = useState(false);
 
   // Cargar solo las solicitudes pendientes
   useEffect(() => {
@@ -127,6 +128,7 @@ const WalfareSolicitudes = () => {
 
   const handleProcessRequest = async (action, requestId) => {
     try {
+      setProcessing(true); // <-- Inicia la animación y bloquea botones
       let endpoint = "";
       let successMessage = "";
 
@@ -165,6 +167,8 @@ const WalfareSolicitudes = () => {
         message: error.response?.data?.error || "Error al procesar la solicitud",
         type: "error",
       });
+    } finally {
+      setProcessing(false); // <-- Detiene la animación y desbloquea botones
     }
   };
 
@@ -480,20 +484,34 @@ const WalfareSolicitudes = () => {
               {/* Botones de acción */}
               <div className="flex justify-end space-x-4 mt-6">
                 <button
-                  onClick={() =>
-                    handleProcessRequest("reject", selectedRequest.id)
-                  }
-                  className="px-6 py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg flex items-center"
+                  onClick={() => handleProcessRequest("reject", selectedRequest.id)}
+                  className={`px-6 py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg flex items-center ${processing ? "opacity-60 cursor-not-allowed" : ""}`}
+                  disabled={processing}
                 >
-                  <FiX className="mr-2" /> Rechazar
+                  {processing ? (
+                    <svg className="animate-spin h-5 w-5 mr-2 text-white" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"/>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+                    </svg>
+                  ) : (
+                    <FiX className="mr-2" />
+                  )}
+                  Rechazar
                 </button>
                 <button
-                  onClick={() =>
-                    handleProcessRequest("approve", selectedRequest.id)
-                  }
-                  className="px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg flex items-center"
+                  onClick={() => handleProcessRequest("approve", selectedRequest.id)}
+                  className={`px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg flex items-center ${processing ? "opacity-60 cursor-not-allowed" : ""}`}
+                  disabled={processing}
                 >
-                  <FiCheck className="mr-2" /> Aprobar
+                  {processing ? (
+                    <svg className="animate-spin h-5 w-5 mr-2 text-white" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"/>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+                    </svg>
+                  ) : (
+                    <FiCheck className="mr-2" />
+                  )}
+                  Aprobar
                 </button>
               </div>
             </div>
